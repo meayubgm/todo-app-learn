@@ -11,6 +11,9 @@ services:
       DATABASE_URL: postgresql://todo:todo@db:5432/todo_app?schema=public
       AUTH_SECRET: ${AUTH_SECRET:-dev-insecure-secret-change-me}
       AUTH_TRUST_HOST: "true"
+      # GitHub OAuth App の Client ID / Secret（ホストの .env から渡す）
+      AUTH_GITHUB_ID: ${AUTH_GITHUB_ID:-}
+      AUTH_GITHUB_SECRET: ${AUTH_GITHUB_SECRET:-}
     volumes:
       # ソースをマウントしてホットリロード。node_modules と .next は
       # コンテナ側（イメージ内）のものを使うため匿名ボリュームで隠す

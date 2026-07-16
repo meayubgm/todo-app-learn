@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help up down build test lint migrate generate studio logs sh
+.PHONY: help up down clean build test lint migrate generate studio logs sh
 
 ## help: ターゲット一覧を表示
 help:
@@ -9,8 +9,12 @@ help:
 up:
 	docker compose up
 
-## down: 開発環境を停止・破棄（DBボリュームも削除）
+## down: 開発環境を停止・削除（DBデータは残す）
 down:
+	docker compose down
+
+## clean: 開発環境を停止し、DBボリュームごと完全削除（リセット）
+clean:
 	docker compose down -v
 
 ## build: Dockerイメージをビルド
@@ -35,7 +39,7 @@ generate:
 
 ## studio: Prisma Studioを起動（http://localhost:5555）
 studio:
-	docker compose run --rm --service-ports web npx prisma studio
+	docker compose run --rm -p 5555:5555 web npx prisma studio
 
 ## logs: webサービスのログを追従表示
 logs:

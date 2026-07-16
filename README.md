@@ -40,7 +40,8 @@ Next.js（App Router）学習用の、CRUD 機能を持つ TODO アプリ。
 | コマンド | 内容 |
 |---|---|
 | `make up` | 開発環境を起動（http://localhost:3000、DB 込み） |
-| `make down` | 停止・破棄（**DB ボリュームも削除される**） |
+| `make down` | 停止・削除（**DB データは残る**） |
+| `make clean` | 停止し、DB ボリュームごと完全削除（**リセット**） |
 | `make build` | Docker イメージをビルド |
 | `make test` | Vitest を実行 |
 | `make lint` | ESLint を実行 |
@@ -62,8 +63,10 @@ docker compose run --rm web npx prisma migrate dev --name init
 
 - 単一テストの実行:
   `docker compose run --rm web npx vitest run src/lib/validation.test.ts`
-- `make down` は DB ボリュームごと消すため、データを残したいときは
-  `docker compose stop` を使う。
+- 日常的な停止は `docker compose stop`（データ保持）、片付けは `make down`（データ保持）、
+  DB を初期化したいときだけ `make clean`（ボリュームごと削除→その後 `make migrate`）。
+- **DB の確認・操作方法**（Prisma Studio・psql・Prisma Client error の対処など）は
+  [`docs/db-の使い方.md`](docs/db-の使い方.md) にまとめている。
 
 ### B. Docker を使わない場合
 
@@ -104,6 +107,35 @@ npm run dev
 > **補足**: この環境の npm は postinstall をブロックするため、`prisma generate` は
 > `postinstall` に置かず、Dockerfile または手動（`db:generate`）で明示実行する。
 
+## Claude Code を使った開発フロー
+
+このプロジェクトは Claude Code（claude.ai/code）での開発を前提に、いくつかの
+プロジェクト設定ファイルとカスタムスキルを用意している。
+
+### 関連ファイル
+
+| ファイル | 役割 |
+|---|---|
+| `CLAUDE.md` | プロジェクト固有の指示。`AGENTS.md` を読み込む |
+| `AGENTS.md` | この Next.js は破壊的変更を含むため、コード記述前に `node_modules/next/dist/docs/` の該当ガイドを読むよう指示 |
+| `WORK_LOG/` | セッションごとの作業サマリー（wrap-up の出力先） |
+
+### セッションの進め方
+
+1. **作業**: 通常どおり Claude Code に依頼して開発を進める。3 ステップ以上の作業や
+   アーキテクチャ判断を伴うタスクは、実装前に計画を提示してもらう。
+2. **動作確認**: diff の確認・テスト実行・ログ確認ができるまで完了と見なさない。
+3. **セッション終了時**: 次の順序で締めくくる。
+   1. **`/wrap-up`** — ここまでの会話内容を `WORK_LOG/session-summary-YYYYMMDD-HHmm.md`
+      として保存する。
+   2. **コミット・プッシュ** — wrap-up の後に、変更をコミットしてリモートへ push する。
+      Claude Code に「コミットしてpushして」または **`/git-commit-push`** と依頼すると、
+      関連する変更をステージ → 差分から簡潔なコミットメッセージを生成 → 確認のうえ
+      コミット & push まで行う。push 不要でコミットだけなら **`/git-commit-quick`**。
+
+> **補足**: wrap-up が生成する `WORK_LOG/` のサマリー自体は、原則コミット対象に含めない
+> （引き継ぎメモとして残す前提）。コミットするかはその都度判断する。
+
 ## ディレクトリ構成
 
 ```
@@ -111,6 +143,10 @@ todo-app-learn/
 ├── compose.yaml              # web(Next.js) + db(PostgreSQL) の2サービス定義
 ├── Dockerfile                # マルチステージ: base/deps/dev/builder/prod
 ├── Makefile                  # コンテナ内実行に委譲する開発コマンド群
+├── CLAUDE.md                 # Claude Code 向けプロジェクト指示
+├── AGENTS.md                 # コード記述前に Next.js 同梱ドキュメントを読む指示
+├── docs/                     # 開発メモ（db-の使い方.md 等、git管理対象外）
+├── WORK_LOG/                 # セッションサマリー（wrap-up の出力先）
 ├── next.config.ts
 ├── tsconfig.json             # import alias: @/* → src/*
 ├── vitest.config.ts          # 現状 environment: "node"
